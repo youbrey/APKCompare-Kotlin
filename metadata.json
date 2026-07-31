@@ -1,0 +1,6 @@
+{
+  "name": "APK Comparator",
+  "description": "Compare 2 APK files with method-level DEX diffs, resource and library analysis, signature hashes, and PDF report export.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
