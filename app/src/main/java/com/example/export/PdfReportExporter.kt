@@ -64,7 +64,7 @@ class PdfReportExporter(private val context: Context) {
         // Header Title
         canvas.drawText("LAPORAN AUDIT & PERBANDINGAN APK", leftMargin, 35f, titlePaint)
 
-        val dateStr = SimpleDateFormat("dd MMMM yyyy HH:mm", Locale("id", "ID")).format(Date(report.timestamp))
+        val dateStr = SimpleDateFormat("dd MMMM yyyy HH:mm", Locale.forLanguageTag("id-ID")).format(Date(report.timestamp))
         canvas.drawText("Dibuat pada: $dateStr | ID Laporan: ${report.id.take(8)}", leftMargin, 55f, subTitlePaint)
 
         yPos = 95f

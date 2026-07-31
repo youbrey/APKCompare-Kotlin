@@ -21,12 +21,11 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: 'gradle'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
 
-      - name: Ensure .env file exists
+      - name: Ensure configuration files exist
         run: |
           if [ ! -f .env ]; then
             if [ -f .env.example ]; then
@@ -35,22 +34,27 @@ jobs:
               touch .env
             fi
           fi
+          if [ ! -f local.properties ]; then
+            touch local.properties
+          fi
 
-      - name: Decode Debug Keystore if base64 available
+      - name: Decode or generate Debug Keystore
         run: |
           if [ -f debug.keystore.base64 ]; then
             base64 -d debug.keystore.base64 > debug.keystore
+          elif [ ! -f debug.keystore ]; then
+            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           fi
 
       - name: Generate Gradle Wrapper if missing
         run: |
           if [ ! -f gradlew ]; then
-            gradle wrapper --gradle-version 8.11.1
+            gradle wrapper --gradle-version 9.3.1
           fi
           chmod +x gradlew
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
@@ -58,3 +62,4 @@ jobs:
           name: app-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 14
+
