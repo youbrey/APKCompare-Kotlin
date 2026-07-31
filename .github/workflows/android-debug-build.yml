@@ -36,6 +36,12 @@ jobs:
             fi
           fi
 
+      - name: Decode Debug Keystore if base64 available
+        run: |
+          if [ -f debug.keystore.base64 ]; then
+            base64 -d debug.keystore.base64 > debug.keystore
+          fi
+
       - name: Generate Gradle Wrapper if missing
         run: |
           if [ ! -f gradlew ]; then
