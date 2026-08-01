@@ -38,7 +38,7 @@ class ApkAnalyzer {
             val uncompressedSize = entry.size
 
             // Read entry bytes for hashing & parsing
-            val bytesList = mutableListOf<Byte>()
+            val entryByteStream = java.io.ByteArrayOutputStream()
             var bytesRead = zipIn.read(buffer)
             while (bytesRead != -1) {
                 md5Digest.update(buffer, 0, bytesRead)
@@ -46,14 +46,12 @@ class ApkAnalyzer {
                 sha256Digest.update(buffer, 0, bytesRead)
 
                 if (entryName.endsWith(".dex") || entryName == "AndroidManifest.xml" || entryName.startsWith("META-INF/")) {
-                    for (i in 0 until bytesRead) {
-                        bytesList.add(buffer[i])
-                    }
+                    entryByteStream.write(buffer, 0, bytesRead)
                 }
                 bytesRead = zipIn.read(buffer)
             }
 
-            val entryBytes = bytesList.toByteArray()
+            val entryBytes = entryByteStream.toByteArray()
 
             if (entryName.endsWith(".dex")) {
                 dexCount++
