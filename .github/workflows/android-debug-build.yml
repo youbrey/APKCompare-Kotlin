@@ -35,6 +35,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           validate-wrappers: true
+          cache-read-only: false
 
       - name: Ensure configuration files exist
         run: |
@@ -47,6 +48,32 @@ jobs:
           fi
           if [ ! -f local.properties ]; then
             touch local.properties
+          fi
+
+      - name: Ensure google-services.json exists (Firebase plugin requirement)
+        run: |
+          if [ ! -f app/google-services.json ]; then
+            cat > app/google-services.json << 'EOF'
+          {
+            "project_info": {
+              "project_number": "000000000000",
+              "project_id": "dummy-project",
+              "storage_bucket": "dummy-project.appspot.com"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+                  "android_client_info": { "package_name": "com.aistudio.apkcomparator.xkdq" }
+                },
+                "oauth_client": [],
+                "api_key": [ { "current_key": "dummy-key" } ],
+                "services": { "appinvite_service": { "other_platform_oauth_client": [] } }
+              }
+            ],
+            "configuration_version": "1"
+          }
+          EOF
           fi
 
       - name: Decode or generate Debug Keystore
@@ -66,8 +93,6 @@ jobs:
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: APK-Comparator-Debug-APK
+          name: APK-Comparator-Debug-APK-${{ github.run_number }}
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 14
-
-
