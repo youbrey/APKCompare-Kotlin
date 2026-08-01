@@ -175,14 +175,11 @@ class MainViewModel(private val repository: HistoryRepository) : ViewModel() {
 
     private fun getFileSize(context: Context, uri: Uri): Long {
         return try {
-            val cursor = context.contentResolver.query(uri, null, null, null, null)
-            val sizeIndex = cursor?.getColumnIndex(android.provider.OpenableColumns.SIZE) ?: -1
-            var size = 0L
-            if (cursor != null && cursor.moveToFirst() && sizeIndex != -1) {
-                size = cursor.getLong(sizeIndex)
-                cursor.close()
-            }
-            if (size > 0) size else 10_000_000L
+            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                val sizeIndex = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE)
+                val size = if (cursor.moveToFirst() && sizeIndex != -1) cursor.getLong(sizeIndex) else 0L
+                if (size > 0) size else 10_000_000L
+            } ?: 10_000_000L
         } catch (e: Exception) {
             10_000_000L
         }
