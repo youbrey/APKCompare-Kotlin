@@ -2,6 +2,7 @@ package com.example.data.parser
 
 import com.example.data.model.ClassInfo
 import com.example.data.model.MethodInfo
+import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -150,14 +151,14 @@ class DexParser {
 
     private fun readMutf8String(buffer: ByteBuffer, offset: Int): String {
         buffer.position(offset)
-        readLeb128(buffer) // string length
-        val bytes = mutableListOf<Byte>()
+        val declaredLen = readLeb128(buffer) // string length (in UTF-16 code units, upper bound for bytes)
+        val out = ByteArrayOutputStream(if (declaredLen in 0..4096) declaredLen else 32)
         while (buffer.hasRemaining()) {
             val b = buffer.get()
             if (b == 0.toByte()) break
-            bytes.add(b)
+            out.write(b.toInt())
         }
-        return String(bytes.toByteArray(), Charsets.UTF_8)
+        return String(out.toByteArray(), Charsets.UTF_8)
     }
 
     private fun readLeb128(buffer: ByteBuffer): Int {

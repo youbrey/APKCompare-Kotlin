@@ -1,6 +1,7 @@
 package com.example.data.parser
 
 import com.example.data.model.*
+import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.security.MessageDigest
 import java.security.cert.CertificateFactory
@@ -37,21 +38,30 @@ class ApkAnalyzer {
             val entryName = entry.name
             val uncompressedSize = entry.size
 
-            // Read entry bytes for hashing & parsing
-            val entryByteStream = java.io.ByteArrayOutputStream()
+            // Only buffer raw bytes for entries we actually need to parse further.
+            // Everything else is streamed straight into the digests and discarded,
+            // which keeps memory usage proportional to the APK's real entry sizes
+            // instead of the old per-byte-boxed ArrayList<Byte> approach.
+            val needsBytes = entryName.endsWith(".dex") ||
+                entryName == "AndroidManifest.xml" ||
+                (entryName.startsWith("META-INF/") &&
+                    (entryName.endsWith(".RSA") || entryName.endsWith(".DSA") || entryName.endsWith(".EC")))
+
+            val byteStream = if (needsBytes) {
+                ByteArrayOutputStream(if (uncompressedSize in 1..Int.MAX_VALUE.toLong()) uncompressedSize.toInt() else 16384)
+            } else null
+
             var bytesRead = zipIn.read(buffer)
             while (bytesRead != -1) {
                 md5Digest.update(buffer, 0, bytesRead)
                 sha1Digest.update(buffer, 0, bytesRead)
                 sha256Digest.update(buffer, 0, bytesRead)
 
-                if (entryName.endsWith(".dex") || entryName == "AndroidManifest.xml" || entryName.startsWith("META-INF/")) {
-                    entryByteStream.write(buffer, 0, bytesRead)
-                }
+                byteStream?.write(buffer, 0, bytesRead)
                 bytesRead = zipIn.read(buffer)
             }
 
-            val entryBytes = entryByteStream.toByteArray()
+            val entryBytes = byteStream?.toByteArray() ?: ByteArray(0)
 
             if (entryName.endsWith(".dex")) {
                 dexCount++
