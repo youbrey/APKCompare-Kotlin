@@ -104,12 +104,12 @@ class MainViewModel(private val repository: HistoryRepository) : ViewModel() {
                         userNotice = "Analisis perbandingan APK selesai!"
                     )
                 }
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 e.printStackTrace()
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        userNotice = "Gagal menganalisis APK: ${e.localizedMessage}"
+                        userNotice = "Gagal menganalisis APK: ${e.localizedMessage ?: e.javaClass.simpleName}"
                     )
                 }
             }
