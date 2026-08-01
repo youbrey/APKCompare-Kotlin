@@ -104,12 +104,23 @@ class MainViewModel(private val repository: HistoryRepository) : ViewModel() {
                         userNotice = "Analisis perbandingan APK selesai!"
                     )
                 }
-            } catch (e: Throwable) {
+            } catch (e: OutOfMemoryError) {
+                // Must be caught separately from Exception below: OutOfMemoryError extends
+                // java.lang.Error, not Exception, so "catch (e: Exception)" alone never catches
+                // it and the app would force-close instead of showing this message gracefully.
                 e.printStackTrace()
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        userNotice = "Gagal menganalisis APK: ${e.localizedMessage ?: e.javaClass.simpleName}"
+                        userNotice = "Gagal menganalisis APK: memori tidak cukup untuk memproses file sebesar ini. Coba tutup aplikasi lain lalu ulangi."
+                    )
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        userNotice = "Gagal menganalisis APK: ${e.localizedMessage}"
                     )
                 }
             }
