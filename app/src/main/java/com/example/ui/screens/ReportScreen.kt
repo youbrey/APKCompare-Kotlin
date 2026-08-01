@@ -984,6 +984,6 @@ private fun formatSize(bytes: Long): String {
 }
 
 private fun formatSizeDelta(bytes: Long): String {
-    val sign = if (bytes > 0) "+" else ""
-    return "$sign${formatSize(bytes)}"
+    val sign = if (bytes >= 0) "+" else "-"
+    return "$sign${formatSize(kotlin.math.abs(bytes))}"
 }

@@ -497,14 +497,11 @@ fun HistoryReportCard(
 
 private fun getFileNameFromUri(context: android.content.Context, uri: Uri): String? {
     return try {
-        val cursor = context.contentResolver.query(uri, null, null, null, null)
-        var name: String? = null
-        if (cursor != null && cursor.moveToFirst()) {
-            val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-            if (nameIndex != -1) {
-                name = cursor.getString(nameIndex)
-            }
-            cursor.close()
+        val name = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                if (nameIndex != -1) cursor.getString(nameIndex) else null
+            } else null
         }
         name ?: uri.lastPathSegment
     } catch (e: Exception) {
