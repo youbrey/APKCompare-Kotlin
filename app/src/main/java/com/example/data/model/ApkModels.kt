@@ -44,8 +44,10 @@ data class ClassDiff(
     val className: String,
     val packageName: String,
     val diffType: DiffType,
-    val class1: ClassInfo? = null,
-    val class2: ClassInfo? = null,
+    // NOTE: class1/class2 (full ClassInfo with nested method lists) were removed on purpose.
+    // They were never read by ReportScreen/HomeScreen/PdfReportExporter (verified) and were
+    // duplicating every method's data 2-3x on top of apk1.classes/apk2.classes, which was the
+    // root cause of the OOM during JSON serialization in HistoryRepository.saveReport().
     val methodDiffs: List<MethodDiff> = emptyList(),
     val addedMethodsCount: Int = 0,
     val removedMethodsCount: Int = 0,
