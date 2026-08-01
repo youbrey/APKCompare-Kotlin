@@ -146,6 +146,12 @@ class DexParser {
         } catch (e: Exception) {
             e.printStackTrace()
             return emptyList()
+        } catch (e: OutOfMemoryError) {
+            // Same reasoning as MainViewModel: Error is not caught by "catch (e: Exception)".
+            // Catching it here lets one abnormally large/malformed dex entry fail gracefully
+            // (skip its classes) instead of the whole multi-dex comparison crashing outright.
+            e.printStackTrace()
+            return emptyList()
         }
     }
 

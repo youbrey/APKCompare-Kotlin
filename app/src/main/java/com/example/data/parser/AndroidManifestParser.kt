@@ -101,11 +101,23 @@ class AndroidManifestParser {
             if (chunkSize <= 0 || startPos + chunkSize > bytes.size) break
 
             if (chunkType == 0x0001) { // RES_STRING_POOL_TYPE
-                val stringCount = buffer.int
+                val stringCountRaw = buffer.int
                 val styleCount = buffer.int
                 val flags = buffer.int
                 val stringsStart = buffer.int
                 val isUtf8 = (flags and (1 shl 8)) != 0
+
+                // Sanity bound: each string offset entry is 4 bytes, so stringCount can never
+                // legitimately exceed (chunkSize / 4). Without this check, a malformed or
+                // corrupted AndroidManifest.xml could set stringCount to a huge/garbage value
+                // and IntArray(stringCount) would attempt a giant single allocation - the same
+                // class of bug that caused the OOM in DexParser's downstream report. Clamp
+                // instead of trusting the raw header field.
+                val maxPlausibleCount = (chunkSize / 4).coerceAtLeast(0)
+                if (stringCountRaw < 0 || stringCountRaw > maxPlausibleCount) {
+                    break
+                }
+                val stringCount = stringCountRaw
 
                 val stringOffsets = IntArray(stringCount)
                 for (i in 0 until stringCount) {

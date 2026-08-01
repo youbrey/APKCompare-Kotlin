@@ -30,6 +30,7 @@ class ApkAnalyzer {
         var certInfo = CertificateInfo()
 
         val zipIn = ZipInputStream(inputStream)
+        try {
         var entry = zipIn.nextEntry
 
         val buffer = ByteArray(16384)
@@ -89,6 +90,9 @@ class ApkAnalyzer {
 
             zipIn.closeEntry()
             entry = zipIn.nextEntry
+        }
+        } finally {
+            zipIn.close()
         }
 
         val md5Hex = md5Digest.digest().joinToString("") { "%02x".format(it) }
@@ -187,7 +191,6 @@ class ApkAnalyzer {
                         className = clsName,
                         packageName = c2.packageName,
                         diffType = DiffType.ADDED,
-                        class2 = c2,
                         addedMethodsCount = c2.methodCount
                     )
                 )
@@ -198,7 +201,6 @@ class ApkAnalyzer {
                         className = clsName,
                         packageName = c1.packageName,
                         diffType = DiffType.REMOVED,
-                        class1 = c1,
                         removedMethodsCount = c1.methodCount
                     )
                 )
@@ -237,8 +239,6 @@ class ApkAnalyzer {
                             className = clsName,
                             packageName = c1.packageName,
                             diffType = DiffType.MODIFIED,
-                            class1 = c1,
-                            class2 = c2,
                             methodDiffs = methodDiffs,
                             addedMethodsCount = addedM,
                             removedMethodsCount = removedM,
@@ -332,9 +332,22 @@ class ApkAnalyzer {
             "Perbandingan menghasilkan ${classDiffs.size} perubahan kelas, ${addedPerms.size} izin baru, dan ${resourceDiffs.size} aset yang dimodifikasi."
         }
 
+        // IMPORTANT (memory fix): apk1.classes / apk2.classes / *.resources / *.libraries hold the
+        // FULL per-method/per-class/per-resource data for the entire APK. None of the UI screens
+        // or the PDF exporter ever read these fields on apk1/apk2 directly - they only read the
+        // *Diffs lists above (classDiffs, resourceDiffs, libraryDiffs) plus scalar metadata like
+        // fileName/packageName/versionName/hashes. Keeping the full lists around here meant every
+        // class/method got serialized redundantly (once per side, plus again inside classDiffs
+        // before the class1/class2 fix above) into a single giant JSON string in
+        // HistoryRepository.saveReport(), which is what triggered the ~155MB single allocation
+        // OutOfMemoryError. Stripping them here keeps this exact object usable for both live UI
+        // display and history persistence, at a tiny fraction of the memory cost.
+        val apk1ForReport = apk1.copy(classes = emptyList(), resources = emptyList(), libraries = emptyList())
+        val apk2ForReport = apk2.copy(classes = emptyList(), resources = emptyList(), libraries = emptyList())
+
         return ApkComparisonReport(
-            apk1 = apk1,
-            apk2 = apk2,
+            apk1 = apk1ForReport,
+            apk2 = apk2ForReport,
             overallRiskLevel = riskLevel,
             riskScore = score.coerceIn(0, 100),
             securityAlerts = alerts,
